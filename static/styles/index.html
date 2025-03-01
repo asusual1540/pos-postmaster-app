@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Form and Table</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h4>Pos Machine Components</h4>
+    <div class="container">
+        <!-- Custom Input -->
+        <div class="form-group">
+            <label for="custom-input">Custom Input:</label>
+            <input type="text" id="custom-input" class="pos-input" placeholder="Enter text...">
+        </div>
+
+        <div class="form-group">
+            <label for="password-input">Password:</label>
+            <div class="password-wrapper">
+                <input type="password" id="password-input" class="password-input" placeholder="Enter password">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">
+                    <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor" class="eye-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M2.458 12c1.732-4.598 5.978-7.5 9.542-7.5s7.81 2.902 9.542 7.5c-1.732 4.598-5.978 7.5-9.542 7.5s-7.81-2.902-9.542-7.5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+
+
+        <div class="form-group">
+            <label for="custom-select">Custom Select:</label>
+            <div class="pos-select-wrapper">
+                <select id="custom-select" class="pos-select">
+                    <option value="option1">Option 1</option>
+                    <option value="option2">Option 2</option>
+                    <option value="option3">Option 3</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Custom Date Range Picker -->
+        <div class="form-group">
+            <label for="date-range">Custom Date Range Picker:</label>
+            <div class="pos-date-time-range">
+                <input type="date" id="start-date" class="pos-date-input">
+                <span>to</span>
+                <input type="date" id="end-date" class="pos-date-input">
+            </div>
+        </div>
+
+        <!-- New Date Time Range Picker -->
+        <div class="form-group">
+            <label for="date-time-range">Date & Time Range Picker:</label>
+            <div class="pos-date-time-range">
+                <input type="datetime-local" id="start-datetime" class="pos-datetime-input">
+                <span>to</span>
+                <input type="datetime-local" id="end-datetime" class="pos-datetime-input">
+            </div>
+        </div>
+
+        <div class="form-group pos-search-container">
+            <label for="search-input">Search:</label>
+            <div class="pos-search-box">
+                <input type="text" id="search-input" class="pos-search-input" placeholder="Search...">
+                <button class="pos-search-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="search-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pagination Component -->
+        <div class="pos-btn-container">
+            <button class="pos-btn">Previous</button>
+            <button class="pos-btn">1</button>
+            <button class="pos-btn">2</button>
+            <button class="pos-btn">3</button>
+            <button class="pos-btn">Next</button>
+        </div>
+
+
+        <div class="pos-table-container">
+            <table class="pos-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Date Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr onclick="setActiveRow(this)">
+                        <td>1</td>
+                        <td>John Doe</td>
+                        <td>2025-02-25 10:30 AM</td>
+                        <td>Active</td>
+                    </tr>
+                    <tr onclick="setActiveRow(this)">
+                        <td>2</td>
+                        <td>Jane Smith</td>
+                        <td>2025-02-24 02:15 PM</td>
+                        <td>Inactive</td>
+                    </tr>
+                    <tr onclick="setActiveRow(this)">
+                        <td>3</td>
+                        <td>Emily Johnson</td>
+                        <td>2025-02-23 05:45 PM</td>
+                        <td>Pending</td>
+                    </tr>
+                    <tr onclick="setActiveRow(this)">
+                        <td>4</td>
+                        <td>Michael Brown</td>
+                        <td>2025-02-22 08:00 AM</td>
+                        <td>Active</td>
+                    </tr>
+                    <tr onclick="setActiveRow(this)">
+                        <td>5</td>
+                        <td>Chris Wilson</td>
+                        <td>2025-02-21 11:20 AM</td>
+                        <td>Inactive</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+        <div class="pos-pagination">
+            <!-- Left Arrow -->
+            <button class="pos-pagination-arrow pos-pagination-arrow-prev" aria-label="Previous Page">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+            </button>
+
+            <!-- Page Numbers -->
+            <button class="pos-pagination-btn active">1</button>
+            <button class="pos-pagination-btn">2</button>
+            <button class="pos-pagination-btn">3</button>
+            <button class="pos-pagination-btn">4</button>
+            <button class="pos-pagination-btn">5</button>
+            <span class="pos-pagination-dots">...</span>
+            <button class="pos-pagination-btn">10</button>
+
+            <!-- Right Arrow -->
+            <button class="pos-pagination-arrow pos-pagination-arrow-next" aria-label="Next Page">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5 15.75 12l-7.5 7.5" />
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+</body>
+<script>
+    function setActiveRow(row) {
+        // Remove active class from all rows
+        let rows = document.querySelectorAll(".custom-table tbody tr");
+        rows.forEach(r => r.classList.remove("active"));
+
+        // Add active class to clicked row
+        row.classList.add("active");
+    }
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById("password-input");
+        const eyeIcon = document.getElementById("eye-icon");
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12s3.6-7 9-7 9 7 9 7-3.6 7-9 7-9-7-9-7z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15l3-3m-3 3l-3-3" />
+        `; /* Eye with slash */
+        } else {
+            passwordInput.type = "password";
+            eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12c1.732-4.598 5.978-7.5 9.542-7.5s7.81 2.902 9.542 7.5c-1.732 4.598-5.978 7.5-9.542 7.5s-7.81-2.902-9.542-7.5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        `; /* Eye open */
+        }
+    }
+
+</script>
+
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jQuery Auth Table</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+
+    <!-- Main Content -->
+    <div id="app-container">
+        <header class="header">
+            <div class="logo-container">
+                <img src="/static/images/logo-post-dark.png" alt="Logo" width="40">
+                <p class="site-title">পোস্টমাষ্টার</p>
+            </div>
+            <div class="avatar">
+                <img src="/static/images/avatar.png" alt="User">
+            </div>
+        </header>
+        <!-- Login Form -->
+        <div class="backdrop">
+            <div class="loader">
+
+                <div id="login-container" class="login-container">
+                    <p class="authenticating">Authenticating user ...</p>
+                    <div class="login-form">
+                        <h2>Login</h2>
+
+                        <div class="form-group">
+                            <!-- <label for="password-input">Password:</label> -->
+                            <div class="pos-input-wrapper">
+                                <input type="text" id="phone" class="pos-input" placeholder="Enter phone...">
+                            </div>
+                        </div>
+                        <!-- <input type="text" id="phone" placeholder="Phone Number"> -->
+                        <!-- <input type="password" id="password" placeholder="Password"> -->
+                        <div class="form-group">
+                            <!-- <label for="password-input">Password:</label> -->
+                            <div class="pos-input-wrapper">
+                                <input type="password" id="password" class="pos-input" placeholder="Enter password...">
+                                <button type="button" class="pos-password-toggle" onclick="togglePasswordVisibility()">
+                                    <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="eye-icon">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M2.458 12c1.732-4.598 5.978-7.5 9.542-7.5s7.81 2.902 9.542 7.5c-1.732 4.598-5.978 7.5-9.542 7.5s-7.81-2.902-9.542-7.5z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pos-btn-container">
+                            <button class="pos-btn" id="login-btn"
+                                style="background-color: rgb(24, 201, 100); color: rgb(255, 255, 255);">Login</button>
+                        </div>
+                        <p id="login-error" style="color: red;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Filters Section -->
+        <div id="filters">
+            <input type="text" id="bagIdInput" placeholder="Bag ID">
+            <button id="searchBagId">Search</button>
+
+            <input type="text" id="destBranchInput" placeholder="Destination Branch Code">
+            <button id="searchDestBranch">Search</button>
+
+            <select id="categorySelect">
+                <option value="All">All Category</option>
+                <option value="Book Packet">Book Packet</option>
+                <option value="Digital Commerce">Digital Commerce</option>
+                <option value="Document">Document</option>
+                <option value="Empty">Empty</option>
+                <option value="GEP">GEP</option>
+                <option value="Letter">Letter</option>
+                <option value="Letter-Document">Letter-Document</option>
+                <option value="Mail-Bag">Mail-Bag</option>
+                <option value="Parcel">Parcel</option>
+                <option value="Registry-Bag">Registry-Bag</option>
+                <option value="Speed Post">Speed Post</option>
+                <option value="Unknown">Unknown</option>
+            </select>
+
+            <select id="bagTypeSelect">
+                <option value="All">All Type</option>
+                <option value="General">General</option>
+                <option value="TB">TB</option>
+            </select>
+
+            <select id="handlingSelect">
+                <option value="All">All Handling</option>
+                <option value="Forward">Forward</option>
+                <option value="RMS Sorting">RMS Sorting</option>
+            </select>
+
+            <select id="statusSelect">
+                <option value="All">All Status</option>
+                <option value="Created">Created</option>
+                <option value="Landed">Landed</option>
+                <option value="Open">Open</option>
+                <option value="Forwarded">Forwarded</option>
+            </select>
+        </div>
+
+        <!-- Table -->
+        <div class="bag_table_container">
+            <table id="bagTable" class="pm_table_style">
+                <thead>
+                    <tr>
+                        <th>Bag ID</th>
+                        <th>Articles</th>
+                        <!-- <th>Category</th> -->
+                        <!-- <th>Type</th> -->
+                        <!-- <th>Destination</th> -->
+                        <th>Create Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+
+        <!-- Pagination -->
+        <!-- <div class="pagination">
+            <button id="prevPage">&larr; Previous</button>
+            <span id="pageInfo">Page 1</span>
+            <button id="nextPage">Next &rarr;</button>
+        </div> -->
+        <div class="pos-pagination">
+            <!-- Left Arrow -->
+            <button class="pos-pagination-arrow pos-pagination-arrow-prev" aria-label="Previous Page" id="prevPage">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+            </button>
+
+            <!-- Page Numbers -->
+            <button class="pos-pagination-btn active">1</button>
+            <button class="pos-pagination-btn">2</button>
+            <button class="pos-pagination-btn">3</button>
+            <button class="pos-pagination-btn">4</button>
+            <button class="pos-pagination-btn">5</button>
+            <span class="pos-pagination-dots">...</span>
+            <button class="pos-pagination-btn">10</button>
+
+            <!-- Right Arrow -->
+            <button class="pos-pagination-arrow pos-pagination-arrow-next" aria-label="Next Page" id="nextPage">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5 15.75 12l-7.5 7.5" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Bag Items Modal -->
+    <div id="bag-items-backdrop" class="backdrop" style="display: none;">
+
+        <div class="bag-items-container">
+            <h2 class="bag-item-title">Articles</h2>
+            <table id="bag-items-table" class="pm_table_style">
+                <thead>
+                    <tr>
+                        <th>Article ID</th>
+                        <th>Status</th>
+                        <th>Booked Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3">No data available</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button onclick="closeBagItemsModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Article Details Modal -->
+    <div id="article-details-backdrop" class="backdrop" style="display: none;">
+        <div class="article-details-container">
+            <h2 class="article-details-title">Article Details</h2>
+
+            <div class="article-info">
+                <p><strong>Item ID:</strong> <span id="article-item-id"></span></p>
+                <p><strong>Item Type:</strong> <span id="article-item-type"></span></p>
+                <p><strong>VAS Type:</strong> <span id="article-vas-type"></span></p>
+
+                <div id="optional-fields" style="display: none;">
+                    <p><strong>Sender Name:</strong> <span id="article-sen-name"></span></p>
+                    <p><strong>Sender Address:</strong> <span id="article-sen-address"></span></p>
+                    <p><strong>Recipient Name:</strong> <span id="article-ben-name"></span></p>
+                    <p><strong>Recipient Address:</strong> <span id="article-ben-address"></span></p>
+                    <p><strong>Sender Contact:</strong> <span id="article-sen-contact"></span></p>
+                    <p><strong>Status:</strong> <span id="article-status"></span></p>
+                    <p><strong>Total Weight:</strong> <span id="article-total-weight"></span></p>
+                    <p><strong>Total Charge:</strong> <span id="article-total-charge"></span></p>
+                </div>
+            </div>
+
+            <h3>Tracking History</h3>
+            <div id="tracking-stepper">
+                <!-- Stepper items will be inserted here dynamically -->
+            </div>
+
+            <button onclick="closeArticleDetailsModal()">Close</button>
+        </div>
+    </div>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+
+        function togglePasswordVisibility() {
+            console.log("Toggling password visibility");
+            const passwordInput = document.getElementById("password");
+            const eyeIcon = document.getElementById("eye-icon");
+
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyeIcon.innerHTML = `
+<path stroke-linecap="round" stroke-linejoin="round" d="M3 12s3.6-7 9-7 9 7 9 7-3.6 7-9 7-9-7-9-7z" />
+<path stroke-linecap="round" stroke-linejoin="round" d="M12 15l3-3m-3 3l-3-3" />
+`; /* Eye with slash */
+            } else {
+                passwordInput.type = "password";
+                eyeIcon.innerHTML = `
+<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12c1.732-4.598 5.978-7.5 9.542-7.5s7.81 2.902 9.542 7.5c-1.732 4.598-5.978 7.5-9.542 7.5s-7.81-2.902-9.542-7.5z" />
+<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+`; /* Eye open */
+            }
+        }
+
+
+    </script>
+
+</body>
+
+</html>

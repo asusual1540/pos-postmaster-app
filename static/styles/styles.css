@@ -1,0 +1,483 @@
+/* General Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+    color: #444;
+}
+
+
+/* Custom Select */
+.pos-select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pos-select:focus {
+    border-color: #0070f3;
+    box-shadow: 0 0 5px rgba(0, 112, 243, 0.3);
+}
+
+/* Date Range Inputs */
+.pos-date-input,
+.pos-datetime-input {
+    width: calc(50% - 5px);
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: white;
+}
+
+.pos-date-input:focus,
+.pos-datetime-input:focus {
+    border-color: #0070f3;
+    box-shadow: 0 0 5px rgba(0, 112, 243, 0.3);
+}
+
+.pos-date-time-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Pagination Styles */
+.pos-btn-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.pos-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pos-btn:hover {
+    background-color: #0070f3;
+    color: white;
+    border-color: #0070f3;
+}
+
+.pos-btn:active {
+    transform: scale(0.95);
+}
+
+
+
+
+
+
+
+
+
+
+/* Custom Input */
+.pos-input {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pos-input:focus {
+    border-color: #0070f3;
+    box-shadow: 0 0 5px rgba(0, 112, 243, 0.3);
+}
+
+
+/* Search Input & Button */
+.pos-search-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pos-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pos-search-input:focus {
+    border-color: #777777;
+    box-shadow: 0 0 5px rgba(0, 112, 243, 0.3);
+}
+
+.pos-search-btn {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    color: #888888;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 34px;
+    height: 34px;
+    top: 0px;
+    right: 0px;
+    border: 1px solid #d1d1d1;
+}
+
+.pos-search-btn:hover {
+    background-color: #005bb5;
+    color: white;
+}
+
+
+/* Custom Select Container */
+.pos-select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+/* Hide Default Select Arrow */
+.pos-select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    background: white;
+    outline: none;
+    appearance: none;
+    /* Hides default dropdown arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative;
+    cursor: pointer;
+}
+
+/* Custom Stroked Down Arrow */
+.pos-select-wrapper::after {
+    content: "";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23555'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") no-repeat center;
+    background-size: contain;
+    pointer-events: none;
+    transition: stroke 0.2s;
+}
+
+/* Focus & Hover Effects */
+.pos-select:focus,
+.pos-select:hover {
+    border-color: #0070f3;
+    box-shadow: 0 0 5px rgba(0, 112, 243, 0.3);
+}
+
+/* Change Arrow Color on Focus/Hover */
+.pos-select:focus+.pos-select-wrapper::after,
+.pos-select:hover+.pos-select-wrapper::after {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%230070f3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") no-repeat center;
+}
+
+
+
+/* Pagination Container */
+.pos-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f9f9f9;
+    /* Light background */
+    padding: 8px;
+    border-radius: 16px;
+    /* Fully rounded outer edges */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Pagination Buttons */
+.pos-pagination-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #333;
+    background: #fff;
+    border: 1px solid #dddddd7e;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, border-color 0.2s;
+}
+
+/* Active Page Button */
+.pos-pagination-btn.active {
+    background: #0070f3;
+    color: white;
+    border-color: #0070f3;
+    /* border-radius: 8px; */
+}
+
+/* Leftmost & Rightmost Buttons (Rounded Corners) */
+/* .pos-pagination-btn:first-child {
+    border-radius: 16px 0 0 16px;
+}
+
+.pos-pagination-btn:last-child {
+    border-radius: 0 16px 16px 0;
+} */
+
+/* Pagination Buttons Hover & Active */
+.pos-pagination-btn.active:hover {
+    background: rgb(3, 74, 155);
+    color: white;
+    border-color: #0070f3;
+}
+
+.pos-pagination-btn:hover {
+    background: #f0f0f0;
+    border-color: #bbb;
+}
+
+/* 
+.pos-pagination-btn:active {
+    transform: scale(0.95);
+} */
+
+/* Dots */
+.pos-pagination-dots {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #333;
+    background: #fff;
+    border: 1px solid #dddddd7e;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, border-color 0.2s;
+}
+
+/* Stroked Arrow Buttons */
+.pos-pagination-arrow {
+    width: 34px;
+    height: 34px;
+    background: none;
+    border: 1px solid #dddddd7e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.pos-pagination-arrow svg {
+    width: 16px;
+    height: 16px;
+    stroke: #555;
+    stroke-width: 2;
+}
+
+.pos-pagination-arrow-prev {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.pos-pagination-arrow-next {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.pos-pagination-arrow:hover {
+    background: #f0f0f0;
+    border-color: #bbb;
+}
+
+.pos-pagination-arrow:hover svg {
+    stroke: #0070f3;
+}
+
+.pos-pagination-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #ddd;
+}
+
+
+
+
+
+
+
+
+
+
+/* Table Container */
+.pos-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom Table */
+.pos-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+}
+
+/* Table Header */
+.pos-table thead {
+    background: #f0f0f0;
+    font-weight: bold;
+}
+
+/* Striped Rows */
+.pos-table tbody tr:nth-child(odd) {
+    background: #fafafa;
+}
+
+.pos-table tbody tr:nth-child(even) {
+    background: #ffffff;
+}
+
+/* Hover Effect */
+.pos-table tbody tr:hover {
+    background: #e9f3ff;
+    /* Light blue on hover */
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+/* Active (Selected) Row */
+.pos-table tbody tr.active {
+    background: #0070f3 !important;
+    /* NextUI Blue */
+    color: white;
+}
+
+/* Table Cells */
+.pos-table th,
+.pos-table td {
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Remove Border from Last Row */
+.pos-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Password Input Wrapper */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* Password Input */
+.password-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.password-input:focus {
+    border-color: #0070f3;
+    box-shadow: 0 0 5px rgba(0, 112, 243, 0.3);
+}
+
+/* Password Toggle Button */
+.password-toggle {
+    position: absolute;
+    right: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Eye Icon */
+.eye-icon {
+    width: 20px;
+    height: 20px;
+    stroke: #555;
+    transition: stroke 0.2s;
+}
+
+/* Eye Icon Hover Effect */
+.password-toggle:hover .eye-icon {
+    stroke: #0070f3;
+}
