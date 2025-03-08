@@ -416,6 +416,42 @@ label {
     border-bottom: none;
 }
 
+h2 {
+    margin: 0px;
+    padding: 0px;
+}
+
+/* Style for bottom navigation buttons */
+.bottom-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    background: #fff;
+    padding: 10px 0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.bottom-menu button {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    background: #0070f3;
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 0;
+    transition: background 0.3s ease;
+}
+
+.bottom-menu button:hover {
+    background: #005bb5;
+}
+
 
 
 

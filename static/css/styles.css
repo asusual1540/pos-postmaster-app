@@ -207,6 +207,16 @@ td {
     width: 68%;
 }
 
+.add-bag-container {
+    background: white;
+    padding: 20px;
+    width: 80%;
+    height: 80%;
+    margin: 10% auto;
+    border-radius: 8px;
+    text-align: center;
+}
+
 .bag-items-container {
     background: white;
     padding: 20px;
@@ -369,7 +379,6 @@ td {
     justify-content: center;
     align-items: center;
     gap: 5px;
-    margin-top: 20px;
     width: 100%;
 }
 
@@ -807,4 +816,16 @@ td {
 /* Eye Icon Hover Effect */
 .pos-password-toggle:hover .eye-icon {
     stroke: #0070f3;
+}
+
+/* Highlight selected rows */
+.selected-row {
+    background-color: rgba(0, 112, 243, 0.2) !important;
+    /* Light blue */
+}
+
+/* Ensure buttons are enabled/disabled properly */
+.pos-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }

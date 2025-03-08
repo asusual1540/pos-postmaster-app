@@ -1,44 +1,122 @@
 const API_AUTH_URL = "http://192.168.1.18:8000/sso";
 const API_BAGS_URL = "http://192.168.1.18:8002/v1/dms-legacy-core-logs/get-bags";
-const INITIAL_QUERY_PARAMS = {
-    page: 1,
-    per_page: 20,
-    bag_id: "",
-    bag_category: "All",
-    bag_type: "All",
-    handling: "All",
-    status: "All",
-    dest_branch_code: ""
-}
+const API_BAG_ITEMS_URL = "http://localhost:8002/v1/dms-legacy-core-logs/get-bag-items";
 
+// Define queryParams globally so it can be accessed across filters & pagination
+let current_date = new Date();
+current_date.setHours(current_date.getHours() + 6); // Shift time forward by 6 hours
+let create_from = current_date.toISOString().split("T")[0] + "T00:00";
+let create_to = current_date.toISOString().slice(0, 16);
+
+let queryParams = {
+    page: 1,
+    per_page: 50,
+    bag_id: "",
+    bag_category: "all",
+    bag_type: "all",
+    handling: "all",
+    status: "all",
+    dest_branch_code: "",
+    created_at_from: create_from,
+    created_at_to: create_to
+};
+
+let bagItemQueryParams = {
+    page: 1,
+    per_page: 15,
+    bag_id: "",
+    is_item_bag: "all",
+    bag_type: "all",
+    branch_code: "",
+    item_bag_id: "",
+    status: "all"
+};
+
+let cache = {};
+let bag_items_cache = {};
 
 $(document).ready(function () {
+    let selectedArticles = new Set();
+    let hasSelectedArticles = false;
+    // Function to toggle row selection
+
+    // // Get today's date
+    // let now = new Date();
+
+    // // Format the date-time properly for datetime-local input (YYYY-MM-DDTHH:MM)
+    // function formatDateTime(date) {
+    //     let year = date.getFullYear();
+    //     let month = String(date.getMonth() + 1).padStart(2, "0"); // Ensure two digits
+    //     let day = String(date.getDate()).padStart(2, "0");
+    //     let hours = String(date.getHours()).padStart(2, "0");
+    //     let minutes = String(date.getMinutes()).padStart(2, "0");
+
+    //     return `${year}-${month}-${day}T${hours}:${minutes}`;
+    // }
+
+    // // Set from = start of today (00:00:00)
+    // let todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    // let todayEnd = now; // Current time
+
+    // Set values in the datetime-local inputs
+    $("#created_at_from").val(create_from)
+    $("#created_at_to").val(create_to);
+
+    // Ensure queryParams also includes this default date range
+    // queryParams.created_at_from = formatDateTime(todayStart);
+    // queryParams.created_at_to = formatDateTime(todayEnd);
+
+
+
     let token = getCookie("access");
     console.log("Access token:", token);
     if (!token) {
         console.log("No token found. Showing login form.");
-        // Show only the login backdrop and login form
-        $("#login-container").show();
-        // $(".backdrop").hide(); // Hide other backdrops
-        // $("#login-container").parent().show(); // Show the specific login backdrop
-        $(".login-form").show();
         $(".authenticating").hide();
+        $("#login-container").show();
+        $(".login-form").show();
     } else {
         $(".backdrop").show();
         $(".authenticating").show();
         verifyUser(token);
     }
 
-    let queryParams = {
-        page: 1,
-        per_page: 20,
-        bag_id: "",
-        bag_category: "All",
-        bag_type: "All",
-        handling: "All",
-        status: "All",
-        dest_branch_code: ""
-    };
+    document.getElementById("filter_apply").addEventListener("click", function () {
+        // Get values from input fields
+        let createdAtFrom = document.getElementById("created_at_from").value;
+        let createdAtTo = document.getElementById("created_at_to").value;
+        let bagId = document.getElementById("bag_id").value.trim();
+        let status = document.getElementById("bag_status").value;
+
+        // Reset queryParams to default
+        // queryParams = {
+        //     page: 1, // Reset to first page on filter apply
+        //     per_page: 20
+        // };
+
+        // Add bag_id only if it's not empty
+        if (bagId) {
+            queryParams.bag_id = bagId;
+        }
+
+        // Add status only if it's not "all"
+        if (status !== "all") {
+            queryParams.status = status;
+        }
+
+        // Add date filters if selected
+        if (createdAtFrom) {
+            queryParams.created_at_from = createdAtFrom;
+        }
+
+        if (createdAtTo) {
+            queryParams.created_at_to = createdAtTo;
+        }
+        console.log("Query params:", queryParams);
+        // Fetch bags with updated filters
+        fetchBags(token, queryParams);
+    });
+
     // Add click event to bag rows
     $(document).on("click", ".bag-row", function () {
         let bagId = $(this).attr("bag_id");
@@ -49,10 +127,14 @@ $(document).ready(function () {
     });
 
     // Attach event to article row click
-    $(document).on("click", ".bag-article-row", function () {
-        let articleId = $(this).attr("article_id");
-        console.log("Fetching article details for:", articleId);
-        openArticleDetailsModal(articleId, token);
+    // $(document).on("click", ".bag-article-row", function () {
+    //     let articleId = $(this).attr("article_id");
+    //     console.log("Fetching article details for:", articleId);
+    //     openArticleDetailsModal(articleId);
+    // });
+    // Attach event to add bag click
+    $(document).on("click", "#add_bag", function () {
+        openAddBagModal();
     });
 
     // Close modal on clicking the backdrop
@@ -62,11 +144,35 @@ $(document).ready(function () {
         }
     });
 
+    // Close modal on clicking the backdrop
+    $(document).on("click", "#add-bag-backdrop", function (event) {
+        if (event.target.id === "add-bag-backdrop") {
+            closeAddBagModal();
+        }
+    });
+
     // Function to close article details modal when clicking outside
     $(document).on("click", "#article-details-backdrop", function (event) {
         if (event.target.id === "article-details-backdrop") {
             closeArticleDetailsModal();
         }
+    });
+
+    $(document).on("click", "#scan-bag-btn", function () {
+        let bagId = $("#scan-bag-input").val().trim();
+        console.log("Scanned bag ID:", bagId);
+        if (bagId) {
+            let accessToken = getCookie("access");
+            // console.log("Access token:", accessToken);
+            bagItemQueryParams.bag_id = bagId;
+            fetchScannedBagItems(accessToken, bagItemQueryParams);
+        }
+    });
+
+    $("#bag_per_page").on("change", function () {
+        queryParams.per_page = parseInt($(this).val());
+        queryParams.page = 1; // Reset to first page when per_page changes
+        fetchBags(getCookie("access"), queryParams);
     });
 
 
@@ -90,12 +196,14 @@ $(document).ready(function () {
 
         // API request payload
         let requestData = {
-            phone_number: `+88${phone}`,
-            password: password
+            username: `${phone}`,
+            password: password,
+            group: "post-master",
+            service: "rms"
         };
         console.log("Request data:", requestData);
         $.ajax({
-            url: 'http://localhost:8000/sso/login-phone/',
+            url: 'http://localhost:8000/sso/v1/land-existing-dms-user/',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(requestData),
@@ -124,7 +232,111 @@ $(document).ready(function () {
         });
     });
     // verifyUser();
+    // Function to toggle row selection
+    function toggleArticleSelection(articleId, rowElement, forceSelect = null) {
+        let shouldSelect = forceSelect !== null ? forceSelect : !selectedArticles.has(articleId);
 
+        if (shouldSelect) {
+            selectedArticles.add(articleId);
+            rowElement.addClass("selected-row");
+            rowElement.find(".article-checkbox").prop("checked", true);
+        } else {
+            selectedArticles.delete(articleId);
+            rowElement.removeClass("selected-row");
+            rowElement.find(".article-checkbox").prop("checked", false);
+        }
+
+        updateButtonsState();
+    }
+
+    // Attach click event for row selection
+    $(document).on("click", ".bag-article-row", function () {
+        let articleId = $(this).attr("article_id");
+        toggleArticleSelection(articleId, $(this));
+    });
+
+    // Checkbox selection
+    $(document).on("change", ".article-checkbox", function () {
+        let articleId = $(this).closest("tr").attr("article_id");
+        let rowElement = $(this).closest("tr");
+        toggleArticleSelection(articleId, rowElement);
+    });
+
+    // Select All Button
+    $("#select-all-articles").on("click", function () {
+        $(".bag-article-row").each(function () {
+            let articleId = $(this).attr("article_id");
+            if (!selectedArticles.has(articleId)) {
+                selectedArticles.add(articleId);
+                $(this).addClass("selected-row");
+                $(this).find(".article-checkbox").prop("checked", true);
+            }
+        });
+        updateButtonsState();
+    });
+
+    // Deselect All Button
+    $("#deselect-all-articles").on("click", function () {
+        selectedArticles.clear();
+        $(".bag-article-row").removeClass("selected-row");
+        $(".article-checkbox").prop("checked", false);
+        updateButtonsState();
+    });
+
+    // Open Article Button
+    $("#open-article").on("click", function () {
+        if (selectedArticles.size === 0) {
+            alert("No articles selected.");
+            return;
+        }
+        selectedArticles.forEach(articleId => openArticleDetailsModal(articleId));
+    });
+
+    // Receive Selected Articles
+    $("#receive-selected").on("click", function () {
+        if (selectedArticles.size === 0) {
+            alert("No articles selected.");
+            return;
+        }
+        console.log("Receiving articles:", Array.from(selectedArticles));
+        selectedArticles.clear();
+        $(".selected-row").removeClass("selected-row");
+        $(".article-checkbox").prop("checked", false);
+        updateButtonsState();
+    });
+
+    // Delete Selected Articles
+    $("#delete-selected").on("click", function () {
+        if (selectedArticles.size === 0) {
+            alert("No articles selected.");
+            return;
+        }
+        console.log("Deleting articles:", Array.from(selectedArticles));
+        selectedArticles.forEach(articleId => {
+            $(`.bag-article-row[article_id="${articleId}"]`).remove();
+        });
+        selectedArticles.clear();
+        updateButtonsState();
+    });
+
+    // Search and Select an Article
+    $("#scan-article-btn").on("click", function () {
+        let searchQuery = $("#scan-article-input").val().trim();
+        if (!searchQuery) return;
+
+        let matchingRow = $(`.bag-article-row[article_id="${searchQuery}"]`);
+        if (matchingRow.length) {
+            toggleArticleSelection(searchQuery, matchingRow);
+        } else {
+            alert("No matching article found.");
+        }
+    });
+
+    // Function to update button states
+    function updateButtonsState() {
+        let hasSelection = selectedArticles.size > 0;
+        $("#open-article, #receive-selected, #delete-selected, #deselect-all-articles").prop("disabled", !hasSelection);
+    }
 
 });
 
@@ -159,7 +371,7 @@ function verifyUser(token) {
             $(".authenticating").text("Authenticated. Redirecting...");
             $(".authenticating").hide();
             $(".backdrop").hide();
-            showApp(token, INITIAL_QUERY_PARAMS);
+            showApp(token, queryParams);
         },
         error: function () {
             deleteCookie("access");
@@ -174,22 +386,36 @@ function showLogin() {
     $("#app-container").hide();
 }
 
-function showApp(token, queryParams) {
+function showApp(token) {
     $("#login-container").hide();
     $("#app-container").show();
-    $("#bagTable").hide();
+    // $("#bagTable").hide();
+
+
     fetchBags(token, queryParams);
 }
 
-function constructQueryString(queryParams) {
+function constructQueryString() {
     let url = `${API_BAGS_URL}/?page=${queryParams.page}&per_page=${queryParams.per_page}`;
 
     if (queryParams.bag_id) url += `&bag_id=${queryParams.bag_id}`;
     if (queryParams.dest_branch_code) url += `&dest_branch_code=${queryParams.dest_branch_code}`;
-    if (queryParams.bag_category !== "All") url += `&bag_category=${queryParams.bag_category}`;
-    if (queryParams.bag_type !== "All") url += `&bag_type=${queryParams.bag_type}`;
-    if (queryParams.handling !== "All") url += `&handling=${queryParams.handling}`;
-    if (queryParams.status !== "All") url += `&status=${queryParams.status}`;
+    if (queryParams.bag_category && queryParams.bag_category !== "all") url += `&bag_category=${queryParams.bag_category}`;
+    if (queryParams.bag_type && queryParams.bag_type !== "all") url += `&bag_type=${queryParams.bag_type}`;
+    if (queryParams.handling && queryParams.handling !== "all") url += `&handling=${queryParams.handling}`;
+    if (queryParams.status && queryParams.status !== "all") url += `&status=${queryParams.status}`;
+
+    if (queryParams.created_at_from) {
+        let [dateFrom, timeFrom] = queryParams.created_at_from.split("T");
+        url += `&create_date_from=${dateFrom}`
+        url += `&create_time_from=${timeFrom}`
+    };
+
+    if (queryParams.created_at_to) {
+        let [dateTo, timeTo] = queryParams.created_at_to.split("T");
+        url += `&create_date_to=${dateTo}`
+        url += `&create_time_to=${timeTo}`
+    };
 
     return url;
 }
@@ -198,6 +424,15 @@ function fetchBags(token, queryParams) {
     let url = constructQueryString(queryParams);
     console.log("Fetching from URL:", url);
 
+    // Check cache to avoid unnecessary API calls
+    if (cache[url]) {
+        console.log("Using cached data:", cache[url]);
+        updateBagTable(cache[url].results);
+        updatePagination("bagTable", "bag-pagination", cache[url].page, cache[url].total, cache[url].per_page, fetchBags);
+        return;
+    }
+
+
     $.ajax({
         url: url,
         type: "GET",
@@ -205,8 +440,14 @@ function fetchBags(token, queryParams) {
         success: function (response) {
             $("#bagTable").show();
             console.log("Data fetched successfully", response);
+
+            // Store response in cache
+            cache[url] = response;
+
             updateBagTable(response.results);
-            updatePagination(response.page, response.total, response.per_page);
+            // updateBagPagination(response.page, response.total, response.per_page);
+            updatePagination("bagTable", "bag-pagination", response.page, response.total, response.per_page, fetchBags);
+
         },
         error: function (e) {
             console.log("Error fetching data", e.responseJSON);
@@ -215,6 +456,7 @@ function fetchBags(token, queryParams) {
 }
 
 function updateBagTable(data) {
+    console.log("Updating bag table with data:", data);
     $("#bagTable tbody").empty();
     if (data.length === 0) {
         $("#bagTable tbody").append("<tr><td colspan='6'>No records found</td></tr>");
@@ -222,6 +464,7 @@ function updateBagTable(data) {
     }
 
     data.forEach(bag => {
+        console.log("Bag:", bag);
         $("#bagTable tbody").append(`
             <tr class="bag-row" bag_id="${bag.Bag_ID}">
                 <td>${bag.Bag_ID}</td>
@@ -246,9 +489,49 @@ function openBagItemsModal(bagId, token) {
     fetchBagItems(bagId, token);
 }
 
+
+
+function constructBagItemQueryString(bagItemQueryParams) {
+    let url = `${API_BAG_ITEMS_URL}/?page=${bagItemQueryParams.page}&per_page=${bagItemQueryParams.per_page}`;
+
+    if (bagItemQueryParams.bag_id) url += `&bag_id=${bagItemQueryParams.bag_id}`;
+    if (bagItemQueryParams.branch_code) url += `&branch_code=${bagItemQueryParams.branch_code}`;
+    if (bagItemQueryParams.is_item_bag && bagItemQueryParams.is_item_bag !== "all") url += `&is_item_bag=${bagItemQueryParams.is_item_bag}`;
+    if (bagItemQueryParams.bag_type && bagItemQueryParams.bag_type !== "all") url += `&bag_type=${bagItemQueryParams.bag_type}`;
+    if (bagItemQueryParams.item_bag_id && bagItemQueryParams.item_bag_id !== "all") url += `&item_bag_id=${bagItemQueryParams.item_bag_id}`;
+    if (bagItemQueryParams.status && bagItemQueryParams.status !== "all") url += `&status=${bagItemQueryParams.status}`;
+
+    // if (bagItemQueryParams.created_at_from) {
+    //     let [dateFrom, timeFrom] = bagItemQueryParams.created_at_from.split("T");
+    //     url += `&create_date_from=${dateFrom}`
+    //     url += `&create_time_from=${timeFrom}`
+    // };
+
+    // if (bagItemQueryParams.created_at_to) {
+    //     let [dateTo, timeTo] = bagItemQueryParams.created_at_to.split("T");
+    //     url += `&create_date_to=${dateTo}`
+    //     url += `&create_time_to=${timeTo}`
+    // };
+
+    return url;
+}
 // Function to fetch bag items
 function fetchBagItems(bagId, token) {
-    let url = `http://localhost:8002/v1/dms-legacy-core-logs/get-bag-items/?bag_id=${bagId}&page=1&per_page=15`;
+    bagItemQueryParams.bag_id = bagId;
+    let queryParams = { ...bagItemQueryParams, bagId: bagId };
+    console.log("Query params:", queryParams);
+    let url = constructBagItemQueryString(queryParams);
+    console.log("Fetching from URL:", url);
+
+    // Check cache to avoid unnecessary API calls
+    if (bag_items_cache[url]) {
+        console.log("Using cached data:", bag_items_cache[url]);
+        updateBagItemsTable(bag_items_cache[url].results, bagId);
+        updatePagination("scanned-bag-items-table", "scanned-bag-items-pagination", bag_items_cache[url].page, bag_items_cache[url].total, bag_items_cache[url].per_page, fetchBagItems);
+        return;
+    }
+
+    // let url = `http://localhost:8002/v1/dms-legacy-core-logs/get-bag-items/?bag_id=${bagId}&page=1&per_page=15`;
 
     $.ajax({
         url: url,
@@ -257,10 +540,42 @@ function fetchBagItems(bagId, token) {
         success: function (response) {
             console.log("Bag items fetched:", response);
             updateBagItemsTable(response.results, bagId);
+            updatePagination("scanned-bag-items-table", "scanned-bag-items-pagination", response.page, response.total, response.per_page, fetchBagItems);
         },
         error: function (e) {
             console.error("Error fetching bag items", e);
             $("#bag-items-table tbody").html('<tr><td colspan="3">Failed to load data</td></tr>');
+        }
+    });
+}
+
+// Function to fetch bag items
+function fetchScannedBagItems(token, bagItemQueryParams) {
+    let url = constructBagItemQueryString(bagItemQueryParams);
+    console.log("Fetching from scan URL:", url);
+
+    // Check cache to avoid unnecessary API calls
+    if (bag_items_cache[url]) {
+        console.log("Using cached data:", bag_items_cache[url]);
+        updateScanBagItemsTable(bag_items_cache[url].results);
+        updatePagination("scanned-bag-items-table", "scanned-bag-items-pagination", bag_items_cache[url].page, bag_items_cache[url].total, bag_items_cache[url].per_page, fetchScannedBagItems);
+        return;
+    }
+
+    // let url = `http://localhost:8002/v1/dms-legacy-core-logs/get-bag-items/?bag_id=${bagId}&page=1&per_page=15`;
+
+    $.ajax({
+        url: url,
+        type: "GET",
+        headers: { "Authorization": `Bearer ${token}` },
+        success: function (response) {
+            console.log("Bag items fetched:", response);
+            updateScanBagItemsTable(response.results);
+            updatePagination("scanned-bag-items-table", "scanned-bag-items-pagination", response.page, response.total, response.per_page, fetchScannedBagItems);
+        },
+        error: function (e) {
+            console.error("Error fetching bag items", e);
+            $("#scanned-bag-items-table tbody").html('<tr><td colspan="3">Failed to load data</td></tr>');
         }
     });
 }
@@ -287,6 +602,45 @@ function updateBagItemsTable(data, bagId) {
     });
 }
 
+// Function to update modal table
+function updateScanBagItemsTable(data) {
+    if (!data) {
+        $("#scanned-bag-items-table tbody").html('<tr><td colspan="3">No records found</td></tr>');
+        return;
+    }
+    if (data.length === 0) {
+        $("#scanned-bag-items-table tbody").html('<tr><td colspan="3">No records found</td></tr>');
+        return;
+    }
+    if (data.length >= 1) {
+        $(".scanned-bag-item-title").text(`Articles in ${data[0].Item_Bag_ID}`);
+    }
+
+    let tbody = $("#scanned-bag-items-table tbody");
+    tbody.empty();
+
+    if (data.length === 0) {
+        tbody.append("<tr><td colspan='3'>No records found</td></tr>");
+        return;
+    }
+
+    data.forEach((item, index) => {
+        tbody.append(`
+            <tr class="bag-article-row" article_id="${item.Item_Bag_ID}">
+                <td>${index + 1}</td>
+                <td>${item.Item_Bag_ID}</td>
+                <td>${item.Status}</td>
+                <td>${item.Booked_Create_Date}</td>
+            </tr>
+        `);
+    });
+}
+
+// Function to close modal
+function closeAddBagModal() {
+    $("#add-bag-backdrop").hide();
+}
+
 // Function to close modal
 function closeBagItemsModal() {
     $("#bag-items-backdrop").hide();
@@ -294,14 +648,23 @@ function closeBagItemsModal() {
 
 
 // Function to open article details modal
-function openArticleDetailsModal(articleId, token) {
+function openArticleDetailsModal(articleId) {
     $("#article-details-backdrop").show();
     $("#tracking-stepper").html('<p>Loading...</p>'); // Show loading state
-    fetchArticleDetails(articleId, token);
+    fetchArticleDetails(articleId);
+}
+
+// Function to open article details modal
+function openAddBagModal() {
+    $("#add-bag-backdrop").show();
+    $("#scan-bag-input").focus();
+    // fetchArticleDetails(articleId);
 }
 
 // Function to fetch article details
-function fetchArticleDetails(articleId, token) {
+function fetchArticleDetails(articleId) {
+    let token = getCookie("access");
+    console.log("Access token:", token);
     let url = `http://localhost:8002/v1/dms-legacy-core-logs/get-bag-item-detail/?item_id=${articleId}`;
 
     $.ajax({
@@ -364,67 +727,260 @@ function closeArticleDetailsModal() {
     $("#article-details-backdrop").hide();
 }
 
+// function updateBagPagination(currentPage, totalRecords, perPage) {
+//     let totalPages = Math.ceil(totalRecords / perPage);
+//     let paginationContainer = $("#bag-pagination");
 
-function updatePagination(currentPage, totalRecords, perPage) {
+//     document.getElementById("total_bags").innerText = `Total Bags : ${totalRecords}`;
+
+//     // Select the correct per_page option in the dropdown
+//     $("#bag_per_page").val(perPage);
+
+//     // Ensure UI reflects the selection
+//     $("#bag_per_page").trigger("change");
+
+//     // Clear existing pagination buttons
+//     paginationContainer.find(".bag-pagination-btn, .pos-pagination-dots").remove();
+//     console.log("Total pages:", totalPages);
+//     console.log("Current page:", currentPage);
+//     console.log("Total records:", totalRecords);
+
+//     let paginationHtml = '';
+
+//     if (totalPages <= 6) {
+//         // Show all pages if 6 or less
+//         for (let i = 1; i <= totalPages; i++) {
+//             paginationHtml += `<button class="bag-pagination-btn ${i == currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
+//         }
+//     } else {
+//         // First 4 pages
+//         for (let i = 1; i <= 4; i++) {
+//             paginationHtml += `<button class="bag-pagination-btn ${i == currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
+//         }
+
+//         if (currentPage > 4 && currentPage < totalPages - 2) {
+//             paginationHtml += `<span class="pos-pagination-dots">...</span>`;
+//             paginationHtml += `<button class="bag-pagination-btn page-active" data-page="${currentPage}">${currentPage}</button>`;
+//         } else {
+//             paginationHtml += `<span class="pos-pagination-dots">...</span>`;
+//         }
+
+//         // Last 2 pages
+//         paginationHtml += `<button class="bag-pagination-btn ${totalPages - 1 == currentPage ? 'page-active' : ''}" data-page="${totalPages - 1}">${totalPages - 1}</button>`;
+//         paginationHtml += `<button class="bag-pagination-btn ${totalPages == currentPage ? 'page-active' : ''}" data-page="${totalPages}">${totalPages}</button>`;
+//     }
+
+//     // Append buttons before the next arrow
+//     $("#nextBagPage").before(paginationHtml);
+
+//     // **Remove previous event handlers before adding new ones**
+//     $(document).off("click", "#nextBagPage");
+
+//     // Add click event listener to pagination buttons
+//     $(document).on("click", ".bag-pagination-btn", function () {
+//         let token = getCookie("access");
+//         console.log("Access token:", token);
+
+//         let newPage = parseInt($(this).attr("data-page"));
+//         queryParams.page = newPage;
+
+//         fetchBags(token, queryParams);
+//     });
+
+//     // Disable prev/next buttons if necessary
+//     $("#prevPage").prop("disabled", currentPage === 1);
+//     $("#nextPage").prop("disabled", currentPage === totalPages);
+// }
+
+
+
+// function updateBagItemPagination(currentPage, totalRecords, perPage) {
+//     let totalPages = Math.ceil(totalRecords / perPage);
+//     let paginationContainer = $("#scan-bag-item-pagination");
+
+//     document.getElementById("total_scanned_bag_items").innerText = `Total Bag Items : ${totalRecords}`;
+
+//     // Select the correct per_page option in the dropdown
+//     $("#scabag_per_page").val(perPage);
+
+//     // Ensure UI reflects the selection
+//     $("#bag_per_page").trigger("change");
+
+//     // Clear existing pagination buttons
+//     paginationContainer.find(".bag-pagination-btn, .pos-pagination-dots").remove();
+//     console.log("Total pages:", totalPages);
+//     console.log("Current page:", currentPage);
+//     console.log("Total records:", totalRecords);
+
+//     let paginationHtml = '';
+
+//     if (totalPages <= 6) {
+//         // Show all pages if 6 or less
+//         for (let i = 1; i <= totalPages; i++) {
+//             paginationHtml += `<button class="bag-pagination-btn ${i == currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
+//         }
+//     } else {
+//         // First 4 pages
+//         for (let i = 1; i <= 4; i++) {
+//             paginationHtml += `<button class="bag-pagination-btn ${i == currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
+//         }
+
+//         if (currentPage > 4 && currentPage < totalPages - 2) {
+//             paginationHtml += `<span class="pos-pagination-dots">...</span>`;
+//             paginationHtml += `<button class="bag-pagination-btn page-active" data-page="${currentPage}">${currentPage}</button>`;
+//         } else {
+//             paginationHtml += `<span class="pos-pagination-dots">...</span>`;
+//         }
+
+//         // Last 2 pages
+//         paginationHtml += `<button class="bag-pagination-btn ${totalPages - 1 == currentPage ? 'page-active' : ''}" data-page="${totalPages - 1}">${totalPages - 1}</button>`;
+//         paginationHtml += `<button class="bag-pagination-btn ${totalPages == currentPage ? 'page-active' : ''}" data-page="${totalPages}">${totalPages}</button>`;
+//     }
+
+//     // Append buttons before the next arrow
+//     $("#nextBagPage").before(paginationHtml);
+
+//     // **Remove previous event handlers before adding new ones**
+//     $(document).off("click", "#nextBagPage");
+
+//     // Add click event listener to pagination buttons
+//     $(document).on("click", ".bag-pagination-btn", function () {
+//         let token = getCookie("access");
+//         console.log("Access token:", token);
+
+//         let newPage = parseInt($(this).attr("data-page"));
+//         queryParams.page = newPage;
+
+//         fetchBags(token, queryParams);
+//     });
+
+//     // Disable prev/next buttons if necessary
+//     $("#prevPage").prop("disabled", currentPage === 1);
+//     $("#nextPage").prop("disabled", currentPage === totalPages);
+// }
+
+function updatePagination(tableId, paginationContainerId, currentPage, totalRecords, perPage, fetchFunction) {
     let totalPages = Math.ceil(totalRecords / perPage);
-    let paginationContainer = $(".pos-pagination");
+    let paginationContainer = $("#" + paginationContainerId);
 
-    // Clear existing pagination buttons
-    paginationContainer.find(".pos-pagination-btn, .pos-pagination-dots").remove();
+    if (!paginationContainer.length) {
+        console.warn(`Pagination container '${paginationContainerId}' not found.`);
+        return;
+    }
+
+    let totalElement = document.getElementById(`${tableId}_total`);
+    if (totalElement) {
+        totalElement.innerText = `Total Records: ${totalRecords}`;
+    }
+
     console.log("Total pages:", totalPages);
     console.log("Current page:", currentPage);
     console.log("Total records:", totalRecords);
+
+    // ✅ Safely get arrows or create them if missing
+    let prevArrow = paginationContainer.find(".pos-pagination-arrow-prev").prop("outerHTML") ||
+        `<button class="pos-pagination-arrow pos-pagination-arrow-prev" aria-label="Previous Page" id="prev${tableId}Page">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>`;
+
+    let nextArrow = paginationContainer.find(".pos-pagination-arrow-next").prop("outerHTML") ||
+        `<button class="pos-pagination-arrow pos-pagination-arrow-next" aria-label="Next Page" id="next${tableId}Page">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5 15.75 12l-7.5 7.5" />
+                        </svg>
+                    </button>`;
+
+    // Remove only pagination numbers and dots, keeping arrows intact
+    paginationContainer.find(".pos-pagination-btn, .pos-pagination-dots").remove();
+
     let paginationHtml = '';
 
     if (totalPages <= 6) {
-        // Show all pages if 6 or less
         for (let i = 1; i <= totalPages; i++) {
-            paginationHtml += `<button class="pos-pagination-btn ${i === currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
+            paginationHtml += `<button class="pos-pagination-btn ${i == currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
         }
     } else {
-        // First 4 pages
         for (let i = 1; i <= 4; i++) {
-            paginationHtml += `<button class="pos-pagination-btn ${i === currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
+            paginationHtml += `<button class="pos-pagination-btn ${i == currentPage ? 'page-active' : ''}" data-page="${i}">${i}</button>`;
         }
 
         if (currentPage > 4 && currentPage < totalPages - 2) {
             paginationHtml += `<span class="pos-pagination-dots">...</span>`;
-            paginationHtml += `<button class="pos-pagination-btn active" data-page="${currentPage}">${currentPage}</button>`;
-            paginationHtml += `<span class="pos-pagination-dots">...</span>`;
+            paginationHtml += `<button class="pos-pagination-btn page-active" data-page="${currentPage}">${currentPage}</button>`;
         } else {
             paginationHtml += `<span class="pos-pagination-dots">...</span>`;
         }
 
-        // Last 2 pages
-        paginationHtml += `<button class="pos-pagination-btn ${totalPages - 1 === currentPage ? 'page-active' : ''}" data-page="${totalPages - 1}">${totalPages - 1}</button>`;
-        paginationHtml += `<button class="pos-pagination-btn ${totalPages === currentPage ? 'page-active' : ''}" data-page="${totalPages}">${totalPages}</button>`;
+        paginationHtml += `<button class="pos-pagination-btn ${totalPages - 1 == currentPage ? 'page-active' : ''}" data-page="${totalPages - 1}">${totalPages - 1}</button>`;
+        paginationHtml += `<button class="pos-pagination-btn ${totalPages == currentPage ? 'page-active' : ''}" data-page="${totalPages}">${totalPages}</button>`;
     }
 
-    // Append buttons before the next arrow
-    $(".pos-pagination-arrow-next").before(paginationHtml);
+    // ✅ Reinsert arrows and pagination buttons
+    paginationContainer.html(prevArrow + paginationHtml + nextArrow);
 
-    // Add event listeners to page buttons
-    $(".pos-pagination-btn").click(function () {
+    // Remove previous event handlers before adding new ones
+    $(document).off("click", `#${paginationContainerId} .pos-pagination-btn`);
+
+    // Add click event listener for pagination
+    $(document).on("click", `#${paginationContainerId} .pos-pagination-btn`, function () {
         let token = getCookie("access");
         console.log("Access token:", token);
-        let newPage = parseInt($(this).attr("data-page"));
 
-        let queryParams = {
-            page: 1,
-            per_page: 20,
-            bag_id: "",
-            bag_category: "All",
-            bag_type: "All",
-            handling: "All",
-            status: "All",
-            dest_branch_code: ""
-        };
-        queryParams.page = newPage;
-        fetchBags(token, queryParams);
+        let newPage = parseInt($(this).attr("data-page"));
+        if (tableId == "scanned-bag-items-table") {
+            bagItemQueryParams.page = newPage;
+            fetchFunction(token, bagItemQueryParams);
+        } else {
+            queryParams.page = newPage
+            fetchFunction(token, queryParams);
+        }
+
+
     });
 
-    // Disable prev/next buttons if necessary
-    $("#prevPage").prop("disabled", currentPage === 1);
-    $("#nextPage").prop("disabled", currentPage === totalPages);
-}
 
+    // Remove previous event handlers before adding new ones
+    $(document).off("click", `#${paginationContainerId} .pos-pagination-arrow-prev`);
+    // Add click event listener for pagination
+    $(document).on("click", `#${paginationContainerId} .pos-pagination-arrow-prev`, function () {
+        if (currentPage === 1) return;
+        let token = getCookie("access");
+        console.log("Access token:", token);
+
+        if (tableId == "scanned-bag-items-table") {
+            bagItemQueryParams.page = bagItemQueryParams.page - 1;
+            fetchFunction(token, bagItemQueryParams);
+        } else {
+            queryParams.page = queryParams.page - 1;
+            fetchFunction(token, queryParams);
+        }
+
+    });
+
+    $(document).off("click", `#${paginationContainerId} .pos-pagination-arrow-next`);
+
+    // Add click event listener for pagination
+    $(document).on("click", `#${paginationContainerId} .pos-pagination-arrow-next`, function () {
+        if (currentPage === totalPages) return
+        let token = getCookie("access");
+        console.log("Access token:", token);
+        if (tableId == "scanned-bag-items-table") {
+            bagItemQueryParams.page = bagItemQueryParams.page + 1;
+            fetchFunction(token, bagItemQueryParams);
+        } else {
+            queryParams.page = queryParams.page + 1;
+            fetchFunction(token, queryParams);
+        }
+
+    });
+
+
+
+    let prevArrowElement = $(`#${paginationContainerId} .pos-pagination-arrow-prev`);
+    let nextArrowElement = $(`#${paginationContainerId} .pos-pagination-arrow-next`);
+
+    if (prevArrowElement.length) prevArrowElement.prop("disabled", currentPage === 1);
+    if (nextArrowElement.length) nextArrowElement.prop("disabled", currentPage === totalPages);
+}
