@@ -10,7 +10,7 @@ let create_to = current_date.toISOString().slice(0, 16);
 
 let queryParams = {
     page: 1,
-    per_page: 50,
+    per_page: 10,
     bag_id: "",
     bag_category: "all",
     bag_type: "all",
@@ -23,7 +23,7 @@ let queryParams = {
 
 let bagItemQueryParams = {
     page: 1,
-    per_page: 15,
+    per_page: 10,
     bag_id: "",
     is_item_bag: "all",
     bag_type: "all",
@@ -81,6 +81,11 @@ $(document).ready(function () {
         verifyUser(token);
     }
 
+    // Attach event to Receive button
+    $("#receive-selected").on("click", receiveSelectedArticles);
+    // Attach event to Receive All button
+    $("#receive-all").on("click", receiveAllBags);
+
     document.getElementById("filter_apply").addEventListener("click", function () {
         // Get values from input fields
         let createdAtFrom = document.getElementById("created_at_from").value;
@@ -114,6 +119,8 @@ $(document).ready(function () {
         }
         console.log("Query params:", queryParams);
         // Fetch bags with updated filters
+        let token = getCookie("access");
+        console.log("Access token:", token);
         fetchBags(token, queryParams);
     });
 
@@ -133,8 +140,8 @@ $(document).ready(function () {
     //     openArticleDetailsModal(articleId);
     // });
     // Attach event to add bag click
-    $(document).on("click", "#add_bag", function () {
-        openAddBagModal();
+    $(document).on("click", "#receive_bag", function () {
+        openReceiveBagModal();
     });
 
     // Close modal on clicking the backdrop
@@ -145,8 +152,8 @@ $(document).ready(function () {
     });
 
     // Close modal on clicking the backdrop
-    $(document).on("click", "#add-bag-backdrop", function (event) {
-        if (event.target.id === "add-bag-backdrop") {
+    $(document).on("click", "#receive-bag-backdrop", function (event) {
+        if (event.target.id === "receive-bag-backdrop") {
             closeAddBagModal();
         }
     });
@@ -231,6 +238,14 @@ $(document).ready(function () {
             }
         });
     });
+    // Open Article Button
+    $("#open-article").on("click", function () {
+        if (selectedArticles.size === 0) {
+            alert("No articles selected.");
+            return;
+        }
+        selectedArticles.forEach(articleId => openArticleDetailsModal(articleId));
+    });
     // verifyUser();
     // Function to toggle row selection
     function toggleArticleSelection(articleId, rowElement, forceSelect = null) {
@@ -283,14 +298,7 @@ $(document).ready(function () {
         updateButtonsState();
     });
 
-    // Open Article Button
-    $("#open-article").on("click", function () {
-        if (selectedArticles.size === 0) {
-            alert("No articles selected.");
-            return;
-        }
-        selectedArticles.forEach(articleId => openArticleDetailsModal(articleId));
-    });
+
 
     // Receive Selected Articles
     $("#receive-selected").on("click", function () {
@@ -335,7 +343,7 @@ $(document).ready(function () {
     // Function to update button states
     function updateButtonsState() {
         let hasSelection = selectedArticles.size > 0;
-        $("#open-article, #receive-selected, #delete-selected, #deselect-all-articles").prop("disabled", !hasSelection);
+        $("#receive-all, #receive-selected, #delete-selected, #deselect-all-articles").prop("disabled", !hasSelection);
     }
 
 });
@@ -375,6 +383,7 @@ function verifyUser(token) {
         },
         error: function () {
             deleteCookie("access");
+            deleteCookie("refresh");
             $(".authenticating").hide();
             showLogin();
         }
@@ -592,10 +601,19 @@ function updateBagItemsTable(data, bagId) {
     }
 
     data.forEach(item => {
+        let _status = item.Delivery_Status;
+        if (_status == "Del_To_Rec") {
+            _status = "Delivered";
+        }
+        else if (_status == "Ret_To_Sen") {
+            _status = "Returned";
+        } else if (_status == "Landed") {
+            _status = "Received";
+        }
         tbody.append(`
             <tr class="bag-article-row" article_id="${item.Item_Bag_ID}">
                 <td>${item.Item_Bag_ID}</td>
-                <td>${item.Status}</td>
+                <td>${_status}</td>
                 <td>${item.Booked_Create_Date}</td>
             </tr>
         `);
@@ -625,11 +643,20 @@ function updateScanBagItemsTable(data) {
     }
 
     data.forEach((item, index) => {
+        let _status = item.Delivery_Status;
+        if (_status == "Del_To_Rec") {
+            _status = "Delivered";
+        }
+        else if (_status == "Ret_To_Sen") {
+            _status = "Returned";
+        } else if (_status == "Landed") {
+            _status = "Received";
+        }
         tbody.append(`
             <tr class="bag-article-row" article_id="${item.Item_Bag_ID}">
                 <td>${index + 1}</td>
                 <td>${item.Item_Bag_ID}</td>
-                <td>${item.Status}</td>
+                <td>${_status}</td>
                 <td>${item.Booked_Create_Date}</td>
             </tr>
         `);
@@ -638,7 +665,7 @@ function updateScanBagItemsTable(data) {
 
 // Function to close modal
 function closeAddBagModal() {
-    $("#add-bag-backdrop").hide();
+    $("#receive-bag-backdrop").hide();
 }
 
 // Function to close modal
@@ -655,10 +682,11 @@ function openArticleDetailsModal(articleId) {
 }
 
 // Function to open article details modal
-function openAddBagModal() {
-    $("#add-bag-backdrop").show();
+function openReceiveBagModal() {
+    $("#receive-bag-backdrop").show();
     $("#scan-bag-input").focus();
-    // fetchArticleDetails(articleId);
+    // Fetch and populate the mail line options when modal opens
+    fetchMailLineOptions();
 }
 
 // Function to fetch article details
@@ -984,3 +1012,122 @@ function updatePagination(tableId, paginationContainerId, currentPage, totalReco
     if (prevArrowElement.length) prevArrowElement.prop("disabled", currentPage === 1);
     if (nextArrowElement.length) nextArrowElement.prop("disabled", currentPage === totalPages);
 }
+
+
+// Function to fetch mail line options from API and populate the select dropdown
+function fetchMailLineOptions() {
+    let token = getCookie("access");
+    console.log("Access token:", token);
+    $.ajax({
+        url: "http://localhost:8002/v1/dms-legacy-core-logs/get-line-list/",
+        method: "GET",
+        dataType: "json",
+        headers: { "Authorization": `Bearer ${token}` },
+        success: function (response) {
+            if (response.data && response.data.length > 0) {
+                let select = $("#custom-select");
+                select.empty(); // Clear previous options
+
+                response.data.forEach(item => {
+                    let optionText = `${item.Category}: ${item.Name} ${item.Caption}`;
+                    let optionValue = `${item.ID}`; // You can customize this if needed
+
+                    select.append(`<option value="${optionValue}">${optionText}</option>`);
+                });
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error fetching mail line options:", error);
+        }
+    });
+}
+
+// Function to receive selected articles
+function receiveSelectedArticles() {
+    let selectedArticles = [];
+    $("#scanned-bag-items-table tbody tr.selected").each(function () {
+        let articleID = $(this).attr("article_id");
+        let status = $(this).find("td:nth-child(3)").text(); // Getting status column
+
+        // Ensure correct formatting for API
+        selectedArticles.push(`${articleID}<>${status}`);
+    });
+
+    if (selectedArticles.length === 0) {
+        alert("No articles selected.");
+        return;
+    }
+
+    let bagID = $("#scan-bag-input").val(); // Assuming scanned bag input contains bag ID
+
+    let requestData = {
+        item_info: selectedArticles,
+        bag_id: bagID
+    };
+
+    $.ajax({
+        url: "http://localhost:8002/v1/dms-legacy-core-logs/receive_bag_article",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(requestData),
+        success: function (response) {
+            console.log("Articles received:", response);
+            alert("Articles received successfully!");
+
+            // Update table or UI if needed
+            fetchScannedBagItems(); // Refresh items
+        },
+        error: function (error) {
+            console.error("Error receiving articles:", error);
+            alert("Failed to receive articles.");
+        }
+    });
+}
+
+
+// Function to receive all bags
+function receiveAllBags() {
+    let selectedMailLine = $("#custom-select").val(); // Get selected mail line
+
+    let scannedBags = [];
+    $("#scanned-bag-items-table tbody tr").each(function () {
+        let bagID = $(this).attr("article_id");
+        let marking = $(this).find("td:nth-child(3)").text(); // Assuming status is in column 3
+
+        if (!marking) marking = "0"; // Default marking
+
+        scannedBags.push(`${bagID}<>${marking}`);
+    });
+
+    if (scannedBags.length === 0) {
+        alert("No bags available.");
+        return;
+    }
+
+    let requestData = {
+        bag_id: scannedBags,
+        mail_line_code: selectedMailLine
+    };
+
+    $.ajax({
+        url: "http://localhost:8002/v1/dms-legacy-core-logs/receive_bag",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(requestData),
+        success: function (response) {
+            console.log("All bags received:", response);
+            alert("All bags received successfully!");
+
+            // Update UI or reset modal
+            $("#receive-bag-backdrop").hide();
+        },
+        error: function (error) {
+            console.error("Error receiving all bags:", error);
+            alert("Failed to receive all bags.");
+        }
+    });
+}
+
+
+
+

@@ -136,17 +136,17 @@ body {
 .pm_table_style tbody tr.active-row {
     /* font-weight: bold; */
     /* color: #009879; */
-    background-color: #009879;
+    background-color: rgba(0, 112, 243, 0.4) !important;
 }
 
 .pm_table_style .bag-row:hover {
     cursor: pointer;
-    background-color: #009879;
+    background-color: rgba(0, 112, 243, 0.4) !important;
 }
 
 .pm_table_style .bag-article-row:hover {
     cursor: pointer;
-    background-color: #009879;
+    background-color: rgba(0, 112, 243, 0.4) !important;
 }
 
 /* 
@@ -215,7 +215,16 @@ td {
     margin: 10% auto;
     border-radius: 8px;
     text-align: center;
+    overflow-x: hidden;
+    overflow-y: scroll;
 }
+
+/* 
+.bag_item_table_container {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+} */
 
 .bag-items-container {
     background: white;
@@ -379,6 +388,7 @@ td {
     justify-content: center;
     align-items: center;
     gap: 5px;
+    margin-bottom: .5rem;
     width: 100%;
 }
 
